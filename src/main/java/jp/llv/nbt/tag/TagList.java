@@ -138,6 +138,10 @@ public class TagList<T extends TagBase> extends TagBase implements Iterable<T> {
     public Iterator<T> iterator() {
         return data.iterator();
     }
+    
+    public int size() {
+        return data.size();
+    }
 
     public class Values {
 
