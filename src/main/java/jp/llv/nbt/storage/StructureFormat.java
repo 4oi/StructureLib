@@ -113,7 +113,6 @@ public class StructureFormat implements StorageFormat {
 
         if (opts.contains(LoadOption.LOAD_ENTITIES)) {
             for (TagCompound tag : entities) {
-                System.out.println(tag);
                 EntitySerializable data = api.loadEntity(tag.contents().getCompound("nbt")).regenerateUUID();
                 VectorSerializable pos = new VectorSerializable((TagList<?>) tag.contents().getTag("pos"));
                 LocationSerializable loc = origin.add(pos);
@@ -122,9 +121,9 @@ public class StructureFormat implements StorageFormat {
         }
     }
 
-    private static class Palette {
+    public static class Palette {
 
-        final List<TagCompound> data = new ArrayList<>();
+        public final List<TagCompound> data = new ArrayList<>();
 
         public Palette() {
         }
@@ -133,7 +132,7 @@ public class StructureFormat implements StorageFormat {
             this.data.addAll(data.get());
         }
 
-        int getIndexOf(TagCompound tag) {
+        public int getIndexOf(TagCompound tag) {
             int index = data.indexOf(tag);
             if (index < 0) {
                 data.add(tag);
@@ -143,19 +142,19 @@ public class StructureFormat implements StorageFormat {
             }
         }
 
-        TagCompound get(int index) {
+        public TagCompound get(int index) {
             return data.get(index);
         }
 
-        TagList<TagCompound> toTag() {
+        public TagList<TagCompound> toTag() {
             return new TagList<>(TagBase.Type.COMPOUND, data);
         }
 
     }
 
-    private static class Blocks implements Iterable<TagCompound> {
+    public static class Blocks implements Iterable<TagCompound> {
 
-        final List<TagCompound> data = new ArrayList<>();
+        public final List<TagCompound> data = new ArrayList<>();
 
         public Blocks() {
         }
@@ -164,14 +163,14 @@ public class StructureFormat implements StorageFormat {
             this.data.addAll(data.get());
         }
 
-        void add(VectorSerializable pos, int index) {
+        public void add(VectorSerializable pos, int index) {
             data.add(new TagCompound.Builder()
                     .append("pos", pos.toBlockTagList())
                     .append("state", index).build()
             );
         }
 
-        void add(VectorSerializable pos, int index, TagCompound tag) {
+        public void add(VectorSerializable pos, int index, TagCompound tag) {
             data.add(new TagCompound.Builder()
                     .append("pos", pos.toBlockTagList())
                     .append("state", index)
@@ -179,7 +178,7 @@ public class StructureFormat implements StorageFormat {
             );
         }
 
-        TagList<TagCompound> toTag() {
+        public TagList<TagCompound> toTag() {
             return new TagList<>(TagBase.Type.COMPOUND, data);
         }
 
@@ -190,9 +189,9 @@ public class StructureFormat implements StorageFormat {
 
     }
 
-    private static class Entities implements Iterable<TagCompound> {
+    public static class Entities implements Iterable<TagCompound> {
 
-        final List<TagCompound> data = new ArrayList<>();
+        public final List<TagCompound> data = new ArrayList<>();
 
         public Entities() {
         }
@@ -201,11 +200,11 @@ public class StructureFormat implements StorageFormat {
             this.data.addAll(data.get());
         }
 
-        void add(VectorSerializable pos, TagCompound tag) {
+        public void add(VectorSerializable pos, TagCompound tag) {
             add(pos, tag, pos);
         }
 
-        void add(VectorSerializable pos, TagCompound tag, VectorSerializable blockPos) {
+        public void add(VectorSerializable pos, TagCompound tag, VectorSerializable blockPos) {
             data.add(new TagCompound.Builder()
                     .append("pos", pos.toTagList())
                     .append("nbt", tag)
@@ -213,7 +212,7 @@ public class StructureFormat implements StorageFormat {
             );
         }
 
-        TagList<TagCompound> toTag() {
+        public TagList<TagCompound> toTag() {
             return new TagList<>(TagBase.Type.COMPOUND, data);
         }
 
