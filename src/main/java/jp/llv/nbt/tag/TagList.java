@@ -21,6 +21,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -29,7 +30,7 @@ import java.util.UUID;
  *
  * @author toyblocks
  */
-public class TagList<T extends TagBase> extends TagBase {
+public class TagList<T extends TagBase> extends TagBase implements Iterable<T> {
 
     private TagBase.Type type;
     private List<T> data;
@@ -131,6 +132,11 @@ public class TagList<T extends TagBase> extends TagBase {
             return false;
         }
         return Objects.equals(data, ((TagList) obj).data);
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return data.iterator();
     }
 
     public class Values {
