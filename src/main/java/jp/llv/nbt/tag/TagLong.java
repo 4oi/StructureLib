@@ -51,7 +51,7 @@ public class TagLong extends TagBase {
     }
 
     @Override
-    public Object get() {
+    public Long get() {
         return data;
     }
     

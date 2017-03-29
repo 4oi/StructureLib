@@ -51,7 +51,7 @@ public class TagFloat extends TagBase {
     }
 
     @Override
-    public Object get() {
+    public Float get() {
         return data;
     }
     

@@ -51,7 +51,7 @@ public class TagDouble extends TagBase {
     }
 
     @Override
-    public Object get() {
+    public Double get() {
         return data;
     }
     
