@@ -158,7 +158,7 @@ public class AsyncStructureFormat implements AsyncStorageFormat {
                 blockPlaceIterator = Collections.emptyIterator();
             }
             if (optionList.contains(LoadOption.LOAD_ENTITIES)) {
-                TagList<TagCompound> list = (TagList<TagCompound>) source.contents().getTag("blocks");
+                TagList<TagCompound> list = (TagList<TagCompound>) source.contents().getTag("entities");
                 estimatedStepsRemaining += list.size();
                 entitySpawnIterator = list.iterator();
             } else {
