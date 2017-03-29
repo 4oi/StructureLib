@@ -3,6 +3,8 @@
  */
 package jp.llv.nbt.tag.nms.mc_1_11_1;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.UUID;
 import jp.llv.nbt.EntitySerializable;
@@ -12,7 +14,6 @@ import jp.llv.nbt.tag.TagList;
 import jp.llv.nbt.tag.nms.EntityTransferer;
 import jp.llv.nbt.tag.nms.NMSConstants;
 import jp.llv.nbt.tag.nms.TagTransferer;
-import jp.llv.reflection.Refl;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -24,19 +25,60 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
  */
 public class EntityTransferer1111 implements EntityTransferer {
 
-    private final String infix;
+    private final String nms;
+    private final String obc;
     private final TagTransferer tagTransferer;
+    private final Class<?> classNBTTagCompound;
+    private final Class<?> classEntity;
+    private final Method methodEntitySerialize;
+    private final Class<?> classCraftServer;
+    private final Class<?> classCraftWorld;
+    private final Field fieldCraftWorldWorld;
+    private final Class<?> classCraftEntity;
+    private final Field fieldCraftEntityEntity;
+    private final Method methodCraftEntityGetEntity;
+    private final Class<?> classWorld;
+    private final Class<?> classChunkRegionLoader;
+    private final Method methodChunkRegionLoaderSpawnEntity;
 
     public EntityTransferer1111(String infix, TagTransferer tag) {
-        this.infix = infix;
+        nms = NMSConstants.NMS + infix;
+        obc = NMSConstants.OBC + infix;
         this.tagTransferer = tag;
+        try {
+            classNBTTagCompound = Class.forName(nms + "NBTTagCompound");
+            classEntity = Class.forName(nms + "Entity");
+            methodEntitySerialize = classEntity.getMethod("d", classNBTTagCompound);
+            classCraftServer = Class.forName(obc + "CraftServer");
+            classCraftWorld = Class.forName(obc + "CraftWorld");
+            fieldCraftWorldWorld = classCraftWorld.getDeclaredField("world");
+            fieldCraftWorldWorld.setAccessible(true);
+            classCraftEntity = Class.forName(obc + "entity.CraftEntity");
+            fieldCraftEntityEntity = classCraftEntity.getDeclaredField("entity");
+            fieldCraftEntityEntity.setAccessible(true);
+            methodCraftEntityGetEntity = classCraftEntity.getMethod("getEntity",
+                    classCraftServer, classEntity
+            );
+            classWorld = Class.forName(nms + "World");
+            classChunkRegionLoader = Class.forName(nms + "ChunkRegionLoader");
+            methodChunkRegionLoaderSpawnEntity = classChunkRegionLoader.getMethod("spawnEntity",
+                    classNBTTagCompound,
+                    classWorld,
+                    double.class, double.class, double.class,
+                    boolean.class,
+                    CreatureSpawnEvent.SpawnReason.class
+            );
+        } catch (ReflectiveOperationException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
     public EntitySerializable transfer(Entity entity) throws IncompatiblePlatformException {
         try {
             Object nmsTag = tagTransferer.createTagCompound();
-            Refl.wrap(entity).get("entity").invoke("d", nmsTag);
+            Object nmsEntity = fieldCraftEntityEntity.get(entity);
+            methodEntitySerialize.invoke(nmsEntity, nmsTag);
             return new EntitySerializable1111((TagCompound) tagTransferer.transfer(nmsTag));
         } catch (ReflectiveOperationException ex) {
             throw new IncompatiblePlatformException(ex);
@@ -72,11 +114,12 @@ public class EntityTransferer1111 implements EntityTransferer {
         public Entity deserialize(World world, double x, double y, double z, boolean flag, CreatureSpawnEvent.SpawnReason reason) throws IncompatiblePlatformException {
             try {
                 Object nmsTag = tagTransferer.transfer(tag);
-                Object nmsWorld = Refl.wrap(world).get("world").unwrap();
-                Object nmsEntity = Refl.getRClass(NMSConstants.NMS + infix + "ChunkRegionLoader")
-                        .invoke("spawnEntity", nmsTag, nmsWorld, x, y, z, flag, reason).unwrap();
-                return Refl.getRClass(NMSConstants.OBC + infix + "entity.CraftEntity")
-                        .invoke("getEntity", Bukkit.getServer(), nmsEntity).unwrapAs(Entity.class);
+                Object nmsWorld = fieldCraftWorldWorld.get(world);
+                Object nmsEntity = methodChunkRegionLoaderSpawnEntity.invoke(null, nmsTag, nmsWorld, x, y, z, flag, reason);
+                if (nmsEntity == null) {
+                    return null;
+                }
+                return (Entity) methodCraftEntityGetEntity.invoke(null, Bukkit.getServer(), nmsEntity);
             } catch (ReflectiveOperationException ex) {
                 throw new IncompatiblePlatformException(ex);
             }
