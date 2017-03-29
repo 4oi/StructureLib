@@ -3,6 +3,9 @@
  */
 package jp.llv.nbt.tag.nms.mc_1_11_1;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,7 +16,6 @@ import jp.llv.nbt.tag.TagCompound;
 import jp.llv.nbt.tag.nms.BlockTransferer;
 import jp.llv.nbt.tag.nms.NMSConstants;
 import jp.llv.nbt.tag.nms.TagTransferer;
-import jp.llv.reflection.Refl;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -24,36 +26,73 @@ import org.bukkit.block.Block;
  */
 public class BlockTransferer1111 implements BlockTransferer {
 
-    private final String infix;
+    private final String nms;
+    private final String obc;
     private final TagTransferer tagTransferer;
+    private final Class<?> classBlockPosition;
+    private final Constructor<?> constroctorBlockPosition;
+    private final Class<?> classWorld;
+    private final Method methodWorldGetType;
+    private final Method methodWorldSetTypeAndData;
+    private final Method methodWorldGetTileEntity;
+    private final Class<?> classCraftWorld;
+    private final Field fieldCraftWorldWorld;
+    private final Class<?> classNBTTagCompound;
+    private final Class<?> classIBlockData;
+    private final Class<?> classGameProfileSerializer;
+    private final Method methodGameProfileSerializerSerialize;
+    private final Method methodGameProfileSerializerDeserialize;
+    private final Class<?> classTileEntity;
+    private final Method methodTileEntitySave;
+    private final Method methodTileEntityLoad;
 
     public BlockTransferer1111(String infix, TagTransferer tagTransferer) {
-        this.infix = infix;
+        nms = NMSConstants.NMS + infix;
+        obc = NMSConstants.OBC + infix;
         this.tagTransferer = tagTransferer;
+        try {
+            classIBlockData = Class.forName(nms + "IBlockData");
+            classBlockPosition = Class.forName(nms + "BlockPosition");
+            constroctorBlockPosition = classBlockPosition.getConstructor(int.class, int.class, int.class);
+            classWorld = Class.forName(nms + "World");
+            methodWorldGetType = classWorld.getMethod("getType", classBlockPosition);
+            methodWorldSetTypeAndData = classWorld.getMethod("setTypeAndData", classBlockPosition, classIBlockData, int.class);
+            methodWorldGetTileEntity = classWorld.getMethod("getTileEntity", classBlockPosition);
+            classCraftWorld = Class.forName(obc + "CraftWorld");
+            fieldCraftWorldWorld = classCraftWorld.getDeclaredField("world");
+            fieldCraftWorldWorld.setAccessible(true);
+            classNBTTagCompound = Class.forName(nms + "NBTTagCompound");
+            classGameProfileSerializer = Class.forName(nms + "GameProfileSerializer");
+            methodGameProfileSerializerSerialize = classGameProfileSerializer.getMethod("a", classNBTTagCompound, classIBlockData);
+            methodGameProfileSerializerDeserialize = classGameProfileSerializer.getMethod("d", classNBTTagCompound);
+            classTileEntity = Class.forName(nms + "TileEntity");
+            methodTileEntitySave = classTileEntity.getMethod("save", classNBTTagCompound);
+            methodTileEntityLoad = classTileEntity.getMethod("a", classNBTTagCompound);
+        } catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException | SecurityException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
     public BlockSerializable transfer(Block block) throws IncompatiblePlatformException {
         try {
             Location loc = block.getLocation();
-            Refl.RObject<?> nmsWorld = Refl.wrap(block.getWorld()).get("world");
-            Refl.RObject<?> nmsPos = Refl.getRClass(NMSConstants.NMS + infix + "BlockPosition")
-                    .newInstance(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+            Object nmsWorld = fieldCraftWorldWorld.get(loc.getWorld());
+            Object nmsPos = constroctorBlockPosition.newInstance(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
 
             TagCompound data = (TagCompound) tagTransferer.transfer(
-                    Refl.getRClass(NMSConstants.NMS + infix + "GameProfileSerializer")
-                    .invoke("a",
+                    methodGameProfileSerializerSerialize.invoke(null,
                             tagTransferer.createTagCompound(), // arg0 : empty compound
-                            nmsWorld.invoke("getType", nmsPos) // arg1 : block data
-                    ).unwrap()
+                            methodWorldGetType.invoke(nmsWorld, nmsPos) // arg1 : block data
+                    )
             );
 
-            Refl.RObject<?> nmsTileEntity = nmsWorld.invoke("getTileEntity", nmsPos);
+            Object nmsTileEntity = methodWorldGetTileEntity.invoke(nmsWorld, nmsPos);
             if (nmsTileEntity == null) { // block is not a tile entity
                 return new BlockSerializable1111(data);
             } else { // block is a tile entity
                 Object nmsTile = tagTransferer.createTagCompound();
-                nmsTileEntity.invoke("save", nmsTile);
+                methodTileEntitySave.invoke(nmsTileEntity, nmsTile);
                 TagCompound tile = (TagCompound) tagTransferer.transfer(nmsTile);
                 return new BlockSerializable1111(data, tile);
             }
@@ -116,18 +155,16 @@ public class BlockTransferer1111 implements BlockTransferer {
         @Override
         public Block deserialize(World world, int x, int y, int z) throws IncompatiblePlatformException {
             try {
-                Refl.RObject<?> nmsWorld = Refl.wrap(world).get("world");
-                Refl.RObject<?> nmsPos = Refl.getRClass(NMSConstants.NMS + infix + "BlockPosition")
-                        .newInstance(x, y, z);
-                Refl.RObject<?> nmsData = Refl.getRClass(NMSConstants.NMS + infix + "GameProfileSerializer")
-                        .invoke("d", tagTransferer.transfer(data));
-                boolean success = nmsWorld.invoke("setTypeAndData", nmsPos, nmsData, 2).unwrapAsBoolean(); // I don't know what 2 means but it works well
+                Object nmsWorld = fieldCraftWorldWorld.get(world);
+                Object nmsPos = constroctorBlockPosition.newInstance(x, y, z);
+                Object nmsData = methodGameProfileSerializerDeserialize.invoke(null, tagTransferer.transfer(data));
+                boolean success = (boolean) methodWorldSetTypeAndData.invoke(nmsWorld, nmsPos, nmsData, 2); // I don't know what 2 means but it works well
                 if (success && tag != null) { // if this is tile entity
-                    Refl.RObject<?> nmsTile = nmsWorld.invoke("getTileEntity", nmsPos);
+                    Object nmsTile = methodWorldGetTileEntity.invoke(nmsWorld, nmsPos);
                     if (nmsTile != null) {
                         TagCompound llvTag = new TagCompound.Builder(tag)
                                 .append("x", x).append("y", y).append("z", z).build();
-                        nmsTile.invoke("a", tagTransferer.transfer(llvTag));
+                        methodTileEntityLoad.invoke(nmsTile, tagTransferer.transfer(llvTag));
                     }
                 }
                 return new Location(world, x, y, z).getBlock();

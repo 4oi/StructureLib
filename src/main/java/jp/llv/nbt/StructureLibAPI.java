@@ -75,10 +75,14 @@ public interface StructureLibAPI {
 
         private void initialize() {
             if (tagTransferer == null) {
+                try {
                 tagTransferer = tagTransfererConstructor.apply(infix);
                 itemTransferer = itemTransfererConstructor.apply(infix, tagTransferer);
                 blockTransferer = blockTransfererConstructor.apply(infix, tagTransferer);
                 entityTransferer = entityTransfererConstructor.apply(infix, tagTransferer);
+                } catch(RuntimeException ex) {
+                    throw new IncompatiblePlatformException(ex);
+                }
             }
         }
 
