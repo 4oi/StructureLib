@@ -159,7 +159,7 @@ public class BlockTransferer1111 implements BlockTransferer {
                 Object nmsPos = constroctorBlockPosition.newInstance(x, y, z);
                 Object nmsData = methodGameProfileSerializerDeserialize.invoke(null, tagTransferer.transfer(data));
                 boolean success = (boolean) methodWorldSetTypeAndData.invoke(nmsWorld, nmsPos, nmsData, 2); // I don't know what 2 means but it works well
-                if (success && tag != null) { // if this is tile entity
+                if (tag != null) { // if this is tile entity
                     Object nmsTile = methodWorldGetTileEntity.invoke(nmsWorld, nmsPos);
                     if (nmsTile != null) {
                         TagCompound llvTag = new TagCompound.Builder(tag)
