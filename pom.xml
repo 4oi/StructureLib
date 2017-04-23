@@ -12,10 +12,20 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
     
+    <parent>
+        <groupId>jp.llv</groupId>
+        <artifactId>github-deploy-base</artifactId>
+        <version>1</version>
+    </parent>
+    
     <repositories>
         <repository>
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>4oi-repo</id>
+            <url>http://repo.llv.jp/</url>
         </repository>
     </repositories>
     
