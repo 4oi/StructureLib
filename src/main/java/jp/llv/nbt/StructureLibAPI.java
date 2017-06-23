@@ -46,6 +46,13 @@ public interface StructureLibAPI {
                 ItemTransferer1111::new,
                 BlockTransferer1111::new,
                 EntityTransferer1111::new
+        ),
+        MC_1_12_1(
+                "v1_12_R1.",
+                TagTransferer1111::new,
+                ItemTransferer1111::new,
+                BlockTransferer1111::new,
+                EntityTransferer1111::new
         ),;
 
         private final String infix;
