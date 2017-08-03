@@ -29,13 +29,13 @@ public interface StructureLibAPI {
     BlockSerializable serialize(Block block);
 
     EntitySerializable serialize(Entity entity);
-    
+
     ItemStackSerializable loadItem(TagCompound tag);
-    
+
     BlockSerializable loadBlock(TagCompound tag);
-    
+
     BlockSerializable loadBlock(TagCompound data, TagCompound nbt);
-    
+
     EntitySerializable loadEntity(TagCompound tag);
 
     enum Version implements StructureLibAPI {
@@ -49,6 +49,13 @@ public interface StructureLibAPI {
         ),
         MC_1_12_1(
                 "v1_12_R1.",
+                TagTransferer1111::new,
+                ItemTransferer1111::new,
+                BlockTransferer1111::new,
+                EntityTransferer1111::new
+        ),
+        MC_1_12_1_1(
+                "v1_12_1_R1.",
                 TagTransferer1111::new,
                 ItemTransferer1111::new,
                 BlockTransferer1111::new,
@@ -83,11 +90,11 @@ public interface StructureLibAPI {
         private void initialize() {
             if (tagTransferer == null) {
                 try {
-                tagTransferer = tagTransfererConstructor.apply(infix);
-                itemTransferer = itemTransfererConstructor.apply(infix, tagTransferer);
-                blockTransferer = blockTransfererConstructor.apply(infix, tagTransferer);
-                entityTransferer = entityTransfererConstructor.apply(infix, tagTransferer);
-                } catch(RuntimeException ex) {
+                    tagTransferer = tagTransfererConstructor.apply(infix);
+                    itemTransferer = itemTransfererConstructor.apply(infix, tagTransferer);
+                    blockTransferer = blockTransfererConstructor.apply(infix, tagTransferer);
+                    entityTransferer = entityTransfererConstructor.apply(infix, tagTransferer);
+                } catch (RuntimeException ex) {
                     throw new IncompatiblePlatformException(ex);
                 }
             }
@@ -151,7 +158,7 @@ public interface StructureLibAPI {
             initialize();
             return entityTransferer;
         }
-        
+
         public static Version getDetectedVersion(Object instance) {
             String infix = instance.getClass().getName().split("\\.")[3] + '.';
             for (Version version : values()) {
